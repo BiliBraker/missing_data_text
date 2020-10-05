@@ -6,8 +6,6 @@ library(stringi)
 library(jstor)
 library(progress)
 
-
-setwd('c:/Users/soirk/Krisztian/Research/missing_data_paper/')
 memory.limit(size=10000)
 
 ## Functions ##
@@ -47,7 +45,7 @@ metadata_2 = metadata_2 %>%
 metadata = bind_rows(metadata_1,metadata_2)
 
 metadata %>% 
-  write_csv(.,path='./metadata.csv')
+  write_csv(.,path = './metadata.csv')
 
 ## Extract content from .txt files ##
 
@@ -174,3 +172,6 @@ for (i in 1:length(jstor_meta$journal_pub_id)){
 }
 
 jstor_meta$discipline[which(is.na(jstor_meta$discipline) == TRUE)] = 'Other'
+
+jstor_meta %>% 
+  saveRDS(.,'jstor_meta.rds')
