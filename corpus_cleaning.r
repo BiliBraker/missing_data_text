@@ -4,10 +4,7 @@ library(tidyverse)
 library(tm)
 library(parallel)
 library(slam)
-
-source("helper_functions_objects.R")
-
-memory.limit(size = 10000)
+library(jprep)
 
 ## parallel computing setup for cleaning
 numCores <- detectCores()
