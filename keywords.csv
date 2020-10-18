@@ -1,3 +1,4 @@
+words
 missing 
 data
 incomplete 
@@ -7,21 +8,15 @@ listwise
 deletion
 pairwise 
 deletion
-missing 
-at 
+missing  
 random
-mar 
-at 
-random
+mar
 mnar
 not 
-at 
-random
 nmat
 missing 
 completely 
 at 
-random
 mcar
 substitution
 mean 
@@ -63,8 +58,3 @@ knn
 nearest 
 neighbor
 neighbour
-
-
-
-
-
