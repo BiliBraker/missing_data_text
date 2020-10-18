@@ -26,7 +26,7 @@ jstor_corpus <- readRDS("./corpus_files/jstor_corpus.rds")
 
 jstor_corpus <- tm_map(jstor_corpus, content_transformer(stri_trans_tolower))
 jstor_corpus <- tm_map(jstor_corpus, removeWords, stopwords_new)
-jstor_corpus <- tm_map(jstor_corpus, content_transformer(latex_html_remove))
+jstor_corpus <- tm_map(jstor_corpus, latex_html_remove)
 jstor_corpus <- tm_map(jstor_corpus, removePunctuation)
 jstor_corpus <- tm_map(jstor_corpus, removeNumbers)
 jstor_corpus <- tm_map(jstor_corpus, remove_special, "[^a-zA-Z0-9]")
