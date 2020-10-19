@@ -3,10 +3,12 @@
 library(tidyverse)
 library(tm)
 library(parallel)
-library(slam)
+library(stringi)
 library(jprep)
 
-## parallel computing setup for cleaning
+jstor_corpus <- readRDS("C:/Users/soirk/Krisztian/Research/missing_data_paper/corpus_files/jstor_corpus_original.rds")
+## cleaning
+
 numCores <- detectCores()
 cl <- makeCluster(numCores)
 clusterExport(cl, c(
@@ -17,12 +19,8 @@ clusterExport(cl, c(
 ))
 tm_parLapply_engine(cl)
 
-## cleaning
-
-jstor_corpus <- readRDS("./corpus_files/jstor_corpus.rds")
-
-jstor_corpus <- tm_map(jstor_corpus, content_transformer(stri_trans_tolower))
 jstor_corpus <- tm_map(jstor_corpus, removeWords, stopwords_new)
+jstor_corpus <- tm_map(jstor_corpus, content_transformer(stri_trans_tolower))
 jstor_corpus <- tm_map(jstor_corpus, latex_html_remove)
 jstor_corpus <- tm_map(jstor_corpus, removePunctuation)
 jstor_corpus <- tm_map(jstor_corpus, removeNumbers)
@@ -34,8 +32,7 @@ jstor_corpus <- tm_map(jstor_corpus, stripWhitespace)
 
 stopCluster(cl)
 
-jstor_corpus %>%
-  saveRDS(., "./corpus_files/jstor_corpus_cleaned.rds")
+jstor_corpus %>% saveRDS(., "./corpus_files/jstor_corpus_cleaned.rds")
 
 # Remove unfrequent and meaningless terms before stemming
 ## Creating DocumentTermMatrix with parallel
