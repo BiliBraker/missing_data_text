@@ -2,18 +2,14 @@
 
 library(tidyverse)
 library(magrittr)
+library(tm)
 library(jstor)
+library(jprep)
 library(progress)
-
-source("helper_functions_objects.R")
-
-memory.limit(size = 10000)
 
 ## Extract metadata from .xml files ##
 
-path <- paste(getwd(), "/JSTOR/data/metadata/", sep = "")
-
-files <- list.files(path, pattern = "xml", full.names = T)
+files <- list.files("./JSTOR/data/metadata/", pattern = "xml", full.names = T)
 
 metadata <- jst_import(files,
   out_file = "./imported_metadata", .f = jst_get_article,
@@ -39,12 +35,11 @@ metadata_2 <- metadata_2 %>%
 
 metadata <- bind_rows(metadata_1, metadata_2)
 
-metadata %>%
-  write_csv(., path = "./metadata.csv")
+metadata %>% write_csv(., path = "./metadata.csv")
 
 ## Extract content from .txt files ##
 
-path <- paste(getwd(), "/JSTOR/data/ocr/", sep = "")
+path <- paste0(getwd(), "/JSTOR/data/ocr/")
 
 files <- list.files(path, pattern = "txt", full.names = T)
 
@@ -53,11 +48,11 @@ content <- jst_import(files,
   files_per_batch = 10000, show_progress = T
 )
 
-content_1 <- read_csv(paste("./JSTOR/", "jstor_content-1.csv", sep = ""))
-content_2 <- read_csv(paste("./JSTOR/", "jstor_content-2.csv", sep = ""))
-content_3 <- read_csv(paste("./JSTOR/", "jstor_content-3.csv", sep = ""))
-content_4 <- read_csv(paste("./JSTOR/", "jstor_content-4.csv", sep = ""))
-content_5 <- read_csv(paste("./JSTOR/", "jstor_content-5.csv", sep = ""))
+content_1 <- read_csv(paste0("./JSTOR/", "jstor_content-1.csv"))
+content_2 <- read_csv(paste0("./JSTOR/", "jstor_content-2.csv"))
+content_3 <- read_csv(paste0("./JSTOR/", "jstor_content-3.csv"))
+content_4 <- read_csv(paste0("./JSTOR/", "jstor_content-4.csv"))
+content_5 <- read_csv(paste0("./JSTOR/", "jstor_content-5.csv"))
 
 content <- bind_rows(content_1, content_2, content_3, content_4, content_5)
 
@@ -69,32 +64,30 @@ content <- content %>%
 jstor_data <- metadata %>%
   left_join(content, by = "file_name")
 
-jstor_data %>%
-  write_csv(., "./JSTOR/jstor_data.csv")
-
 # saveRDS(jstor_data,'./JSTOR/jstor_data.rds')
-
 ## Renaming and relocating column names for VCorpus ##
 
 newcols <- c("doc_id", "journal_pub_id", "origin", "heading", "pub_year", "text")
-
 colnames(jstor_data) <- newcols
 
 jstor_data <- jstor_data %>%
-  relocate("doc_id", "text", "heading", "origin", "pub_year", "journal_pub_id")
+relocate("doc_id", "text", "heading", "origin", "pub_year", "journal_pub_id")
 
+jstor_data %<>% add_column(textlen = NA)
+jstor_data$textlen <- pbapply::pblapply(jstor_data$text, nchar) %>% unlist()
+
+jstor_data %>% write_csv(., "./JSTOR/jstor_data.csv")
 ## Creating VCorpus ##
 
 jstor_corpus <- VCorpus(DataframeSource(jstor_data))
 
-jstor_corpus %>%
-  saveRDS(., "jstor_corpus.rds")
+jstor_corpus %>% saveRDS(., "./jstor_corpus.rds")
 
 ## Filling up the Vcorpus with metadata. Not a necessary step.
 
 pb <- progress_bar$new(total = length(jstor_corpus))
 
-for (i in 1:length(jstor_corpus)) {
+for (i in seq_along(jstor_corpus)) {
   pb$tick()
 
   jstor_corpus[[i]]$meta$heading <- meta(jstor_corpus)$heading[i]
@@ -110,12 +103,11 @@ jstor_meta <- meta(jstor_corpus)
 
 journal_info <- jst_get_journal_overview()
 
-jstor_meta %>%
-  add_column(., "discipline" = NA)
+jstor_meta %>% add_column(., "discipline" = NA)
 
 pb <- progress_bar$new(total = length(jstor_meta$journal_pub_id))
 
-for (i in 1:length(jstor_meta$journal_pub_id)) {
+for (i in seq_along(jstor_meta$journal_pub_id)) {
   pb$tick()
   if (jstor_meta$origin[i] %in% journal_info$title) {
     jstor_meta$discipline[i] <- journal_info$discipline[which(journal_info$title == jstor_meta$origin[i])]
@@ -157,7 +149,7 @@ disc_levels %<>%
 
 pb <- progress_bar$new(total = length(jstor_meta$journal_pub_id))
 
-for (i in 1:length(jstor_meta$journal_pub_id)) {
+for (i in seq_along(jstor_meta$journal_pub_id)) {
   pb$tick()
   if (jstor_meta$discipline[i] %in% disc_levels$discipline) {
     jstor_meta$discipline[i] <- disc_levels$disc_reduced[which(disc_levels$discipline == jstor_meta$discipline[i])]
