@@ -38,3 +38,5 @@ vignettes/*.pdf
 *.zip
 *.csv
 *.Rdata
+*.xml
+*.iml
