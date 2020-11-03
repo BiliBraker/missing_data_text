@@ -6,6 +6,7 @@ library(tm)
 library(jstor)
 library(jprep)
 library(progress)
+library(parallel)
 
 ## Extract metadata from .xml files ##
 
@@ -67,14 +68,24 @@ jstor_data <- metadata %>%
 # saveRDS(jstor_data,'./JSTOR/jstor_data.rds')
 ## Renaming and relocating column names for VCorpus ##
 
+####### modification starts from here
+jstor_data <- readRDS("/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/corpus_files/jstor_data.rds")
 newcols <- c("doc_id", "journal_pub_id", "origin", "heading", "pub_year", "text")
 colnames(jstor_data) <- newcols
 
 jstor_data <- jstor_data %>%
-relocate("doc_id", "text", "heading", "origin", "pub_year", "journal_pub_id")
+  relocate("doc_id", "text", "heading", "origin", "pub_year", "journal_pub_id")
 
 jstor_data %<>% add_column(textlen = NA)
-jstor_data$textlen <- pbapply::pblapply(jstor_data$text, nchar) %>% unlist()
+jstor_data$textlen <- mclapply(jstor_data$text, nchar, mc.cores = 4L) %>% unlist()
+
+### extract first reference from .xml files
+
+
+
+### modification ends here
+
+
 
 jstor_data %>% write_csv(., "./JSTOR/jstor_data.csv")
 ## Creating VCorpus ##
