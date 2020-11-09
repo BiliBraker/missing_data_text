@@ -2,6 +2,7 @@
 
 library(tidyverse)
 library(magrittr)
+library(stringi)
 library(tm)
 library(jstor)
 library(jprep)
@@ -108,10 +109,48 @@ get_first_ref <- function (meta_file){
 jstor_data$first_ref <- mclapply(paste0(path, jstor_data$doc_id, ".xml"),
                                  get_first_ref,
                                  mc.cores = 4L) %>% unlist()
+
+# number of unsuccessful extractions
 jstor_data %>%
   filter(.,is.na(first_ref)) %>%
   select(., first_ref) %>%
   nrow()
+
+### match first reference
+### find the last occurence of the first reference
+
+ref_begin <- function (first_reference){
+
+  if(is.na(first_reference) == FALSE){
+    first_reference %<>%
+    gsub("^(.*?),.*", "\\1", .) %>%
+    str_to_lower(.) %>%
+    stri_locate_all_fixed(str_to_lower(jstor_data$text),.)
+
+    first_reference <- first_reference[[1]][nrow(first_reference[[1]]),1] %>%
+      as.numeric() #last row of the first column == start of the references
+
+    return(first_reference)
+
+  } else {
+    return("no reference found")
+  }
+
+}
+ref_begin(jstor_data$first_ref[5234])
+
+test <- mclapply(jstor_data$first_ref[1:100], ref_begin, mc.cores = 4L) %>% unlist()
+
+which(is.na(test)) %>% length()
+
+test <- jstor_data$first_ref[12200] %>%
+    gsub("^(.*?),.*", "\\1", .) %>%
+    str_to_lower(.) %>%
+    stri_locate_all_fixed(str_to_lower(jstor_data$text[12200]),.)
+
+test[[1]][nrow(test[[1]]),1]
+
+jstor_data$text[12200]
 ### modification ends here
 
 jstor_data %>% write_csv(., "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/JSTOR/jstor_data_v2.csv")
