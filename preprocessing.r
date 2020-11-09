@@ -77,22 +77,49 @@ jstor_data <- jstor_data %>%
   relocate("doc_id", "text", "heading", "origin", "pub_year", "journal_pub_id")
 
 jstor_data %<>% add_column(textlen = NA)
+jstor_data %<>%  add_column(first_ref = NA)
+
 jstor_data$textlen <- mclapply(jstor_data$text, nchar, mc.cores = 4L) %>% unlist()
 
 ### extract first reference from .xml files
+path <- "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/JSTOR/data/metadata/"
 
+get_first_ref <- function (meta_file){
+  # using tryCatch because jst_get_references aborts the execution
+  # if it can't find any reference
+  tryCatch(
+  {
+    ref <- jst_get_references(meta_file)
+    ref %<>%
+      slice(., 1L) %>%
+      select(., ref_unparsed) %>%
+      as.character() %>%
+      str_squish(.)
 
+    return(ref)
+  },
+  error = function (e){
+    e <- NA
+    return(e)
+  }
+  )
+}
 
+jstor_data$first_ref <- mclapply(paste0(path, jstor_data$doc_id, ".xml"),
+                                 get_first_ref,
+                                 mc.cores = 4L) %>% unlist()
+jstor_data %>%
+  filter(.,is.na(first_ref)) %>%
+  select(., first_ref) %>%
+  nrow()
 ### modification ends here
 
-
-
-jstor_data %>% write_csv(., "./JSTOR/jstor_data.csv")
+jstor_data %>% write_csv(., "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/JSTOR/jstor_data_v2.csv")
 ## Creating VCorpus ##
 
 jstor_corpus <- VCorpus(DataframeSource(jstor_data))
 
-jstor_corpus %>% saveRDS(., "./jstor_corpus.rds")
+jstor_corpus %>% saveRDS(., "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/jstor_corpus.rds")
 
 ## Filling up the Vcorpus with metadata. Not a necessary step.
 
