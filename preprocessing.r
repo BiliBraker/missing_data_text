@@ -82,6 +82,8 @@ jstor_data %<>%  add_column(first_ref = NA)
 
 jstor_data$textlen <- mclapply(jstor_data$text, nchar, mc.cores = 4L) %>% unlist()
 
+# TO DO: trim corpus by text length
+
 ### extract first reference from .xml files
 path <- "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/JSTOR/data/metadata/"
 
@@ -116,41 +118,53 @@ jstor_data %>%
   select(., first_ref) %>%
   nrow()
 
+jstor_data %<>% add_column(first_ref_pos = NA)
 ### match first reference
 ### find the last occurence of the first reference
+jstor_data <- read_csv("/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/JSTOR/jstor_data_v2.csv")
 
-ref_begin <- function (first_reference){
+pb <- progress_bar$new(total = length(jstor_data$first_ref))
 
-  if(is.na(first_reference) == FALSE){
-    first_reference %<>%
-    gsub("^(.*?),.*", "\\1", .) %>%
-    str_to_lower(.) %>%
-    stri_locate_all_fixed(str_to_lower(jstor_data$text),.)
+for(i in seq_along(jstor_data$first_ref)){
+  pb$tick()
+  if(is.na(jstor_data$first_ref[i]) == FALSE){
+      first_reference <- jstor_data$first_ref[i]
+      first_reference %<>%
+      gsub("^(.*?),.*", "\\1", .) %>%
+      str_to_lower(.) %>%
+      stri_locate_all_fixed(str_to_lower(jstor_data$text[i]),.)
 
-    first_reference <- first_reference[[1]][nrow(first_reference[[1]]),1] %>%
-      as.numeric() #last row of the first column == start of the references
+      first_reference <- first_reference[[1]][nrow(first_reference[[1]]),1] %>%
+        as.numeric() #last row of the first column == start of the references
 
-    return(first_reference)
+      jstor_data$first_ref_pos[i] <- first_reference
 
-  } else {
-    return("no reference found")
-  }
+    } else {
+      jstor_data$first_ref_pos[i] <- "no reference found"
+    }
 
 }
-ref_begin(jstor_data$first_ref[5234])
 
-test <- mclapply(jstor_data$first_ref[1:100], ref_begin, mc.cores = 4L) %>% unlist()
+jstor_data %>%
+  filter(., !is.na(first_ref_pos) &
+    first_ref_pos != "no reference found" &
+    textlen < 5e5) %>%
+  select(., first_ref_pos) %>%
+  unlist() %>%
+  as.numeric() %>%
+  tibble() %>%
+  ggplot(., aes(x = .)) +
+    geom_histogram(color = "black", fill = "red")
 
-which(is.na(test)) %>% length()
+jstor_data %>%
+  filter(., textlen < 5e5) %>%
+  select(., textlen) %>%
+  unlist() %>%
+  as.numeric() %>%
+  tibble() %>%
+  ggplot(., aes(x = .)) +
+    geom_histogram(color = "black", fill = "lightgreen")
 
-test <- jstor_data$first_ref[12200] %>%
-    gsub("^(.*?),.*", "\\1", .) %>%
-    str_to_lower(.) %>%
-    stri_locate_all_fixed(str_to_lower(jstor_data$text[12200]),.)
-
-test[[1]][nrow(test[[1]]),1]
-
-jstor_data$text[12200]
 ### modification ends here
 
 jstor_data %>% write_csv(., "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/JSTOR/jstor_data_v2.csv")
