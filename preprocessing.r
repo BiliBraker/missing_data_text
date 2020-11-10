@@ -118,40 +118,83 @@ jstor_data %>%
   select(., first_ref) %>%
   nrow()
 
-jstor_data %<>% add_column(first_ref_pos = NA)
-### match first reference
-### find the last occurence of the first reference
+### match first reference and the start of the references
+### find the last occurence of the first reference; find the start of the references
 jstor_data <- read_csv("/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/JSTOR/jstor_data_v2.csv")
+jstor_data %<>% add_column(first_ref_pos = NA,
+                           ref_pos = NA)
 
 pb <- progress_bar$new(total = length(jstor_data$first_ref))
 
 for(i in seq_along(jstor_data$first_ref)){
   pb$tick()
+
+  # find the start of the references with the name of the first referenced author #
+
   if(is.na(jstor_data$first_ref[i]) == FALSE){
-      first_reference <- jstor_data$first_ref[i]
-      first_reference %<>%
-      gsub("^(.*?),.*", "\\1", .) %>%
+    first_reference <- jstor_data$first_ref[i]
+    first_reference %<>% gsub("^(.*?),.*", "\\1", .) %>%
       str_to_lower(.) %>%
       stri_locate_all_fixed(str_to_lower(jstor_data$text[i]),.)
 
-      first_reference <- first_reference[[1]][nrow(first_reference[[1]]),1] %>%
-        as.numeric() #last row of the first column == start of the references
+    first_reference <- first_reference[[1]][nrow(first_reference[[1]]),1] %>% as.numeric()
+    jstor_data$first_ref_pos[i] <- first_reference
 
-      jstor_data$first_ref_pos[i] <- first_reference
+  } else {
+    jstor_data$first_ref_pos[i] <- "no reference found"
+  }
 
-    } else {
-      jstor_data$first_ref_pos[i] <- "no reference found"
-    }
+  # find the start of the references with keywords #
+
+  ref_begin <- stri_locate_all_fixed(str_to_lower(jstor_data$text[i]), " references ")
+  ref_begin <- ref_begin[[1]][nrow(ref_begin[[1]]),1] %>% as.numeric() #last row of the first column == start of the references
+
+  if(is.na(ref_begin) == FALSE){
+
+    jstor_data$ref_pos[i] <- ref_begin
+
+  }
+  if(is.na(ref_begin) == TRUE){
+
+    ref_begin <- stri_locate_all_fixed(str_to_lower(jstor_data$text[i]), " bibliography ")
+    ref_begin <- ref_begin[[1]][nrow(ref_begin[[1]]),1] %>% as.numeric()
+    jstor_data$ref_pos[i] <- ref_begin
+
+  }
+  if(is.na(ref_begin) == TRUE){
+
+    ref_begin <- stri_locate_all_fixed(str_to_lower(jstor_data$text[i]), " literature ")
+    ref_begin <- ref_begin[[1]][nrow(ref_begin[[1]]),1] %>% as.numeric()
+    jstor_data$ref_pos[i] <- ref_begin
+
+  }
+
+  if(is.na(ref_begin) == TRUE){
+
+    jstor_data$ref_pos[i] <- NA
+
+  }
 
 }
 
+jstor_data$first_ref_pos %<>% as.numeric()
+jstor_data$ref_pos %<>% as.numeric()
+
+
+# first reference / text lenght #
+d <- jstor_data %>%
+  mutate(text_len_prop = first_ref_pos / textlen)
+
+d %>%
+  ggplot(., aes(x = text_len_prop)) +
+    geom_histogram(color = "black", fill = "lightblue") +
+  theme_bw()
+
 jstor_data %>%
   filter(., !is.na(first_ref_pos) &
-    first_ref_pos != "no reference found" &
-    textlen < 5e5) %>%
+          textlen < 5e5)  %>%
   select(., first_ref_pos) %>%
   unlist() %>%
-  as.numeric() %>%
   tibble() %>%
   ggplot(., aes(x = .)) +
     geom_histogram(color = "black", fill = "red")
@@ -164,6 +207,26 @@ jstor_data %>%
   tibble() %>%
   ggplot(., aes(x = .)) +
     geom_histogram(color = "black", fill = "lightgreen")
+
+# reference keywords position and first reference position
+
+jstor_data %>%
+  filter(., !is.na(first_ref_pos) &
+    !is.na(ref_pos) &
+    textlen < 2e5)  %>%
+  select(., first_ref_pos, ref_pos) %>%
+  ggplot(.) +
+    geom_histogram(aes(x = first_ref_pos), alpha = .5, fill = "yellow", color = "black") +
+    geom_histogram(aes(x = ref_pos), alpha = .5, fill = "red", color = "blue") +
+    theme_bw()
+
+d <- jstor_data %>%
+  mutate(text_len_prop = abs(first_ref_pos - ref_pos))
+
+d %>%
+  ggplot(., aes(x = text_len_prop)) +
+    geom_histogram(color = "black", fill = "lightblue") +
+  theme_bw()
 
 ### modification ends here
 
