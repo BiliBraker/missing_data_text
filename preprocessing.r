@@ -84,66 +84,14 @@ jstor_data$textlen <- mclapply(jstor_data$text, nchar, mc.cores = 4L) %>% unlist
 
 # TO DO: trim corpus by text length
 
-### extract first reference from .xml files
-path <- "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/JSTOR/data/metadata/"
-
-get_first_ref <- function (meta_file){
-  # using tryCatch because jst_get_references aborts the execution
-  # if it can't find any reference
-  tryCatch(
-  {
-    ref <- jst_get_references(meta_file)
-    ref %<>%
-      slice(., 1L) %>%
-      select(., ref_unparsed) %>%
-      as.character() %>%
-      str_squish(.)
-
-    return(ref)
-  },
-  error = function (e){
-    e <- NA
-    return(e)
-  }
-  )
-}
-
-jstor_data$first_ref <- mclapply(paste0(path, jstor_data$doc_id, ".xml"),
-                                 get_first_ref,
-                                 mc.cores = 4L) %>% unlist()
-
-# number of unsuccessful extractions
-jstor_data %>%
-  filter(.,is.na(first_ref)) %>%
-  select(., first_ref) %>%
-  nrow()
-
-### match first reference and the start of the references
-### find the last occurence of the first reference; find the start of the references
+# find the keywords --> start of references
 jstor_data <- read_csv("/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/JSTOR/jstor_data_v2.csv")
-jstor_data %<>% add_column(first_ref_pos = NA,
-                           ref_pos = NA)
+jstor_data %<>% add_column(ref_pos = NA)
 
-pb <- progress_bar$new(total = length(jstor_data$first_ref))
+pb <- progress_bar$new(total = length(jstor_data$ref_pos))
 
-for(i in seq_along(jstor_data$first_ref)){
+for(i in seq_along(jstor_data$ref_pos)){
   pb$tick()
-
-  # find the start of the references with the name of the first referenced author #
-
-  if(is.na(jstor_data$first_ref[i]) == FALSE){
-    first_reference <- jstor_data$first_ref[i]
-    first_reference %<>% gsub("^(.*?),.*", "\\1", .) %>%
-      str_to_lower(.) %>%
-      stri_locate_all_fixed(str_to_lower(jstor_data$text[i]),.)
-
-    first_reference <- first_reference[[1]][nrow(first_reference[[1]]),1] %>% as.numeric()
-    jstor_data$first_ref_pos[i] <- first_reference
-
-  } else {
-    jstor_data$first_ref_pos[i] <- "no reference found"
-  }
-
   # find the start of the references with keywords #
 
   ref_begin <- stri_locate_all_fixed(str_to_lower(jstor_data$text[i]), " references ")
@@ -163,24 +111,15 @@ for(i in seq_along(jstor_data$first_ref)){
   }
   if(is.na(ref_begin) == TRUE){
 
-    ref_begin <- stri_locate_all_fixed(str_to_lower(jstor_data$text[i]), " literature ")
-    ref_begin <- ref_begin[[1]][nrow(ref_begin[[1]]),1] %>% as.numeric()
-    jstor_data$ref_pos[i] <- ref_begin
-
-  }
-
-  if(is.na(ref_begin) == TRUE){
-
     jstor_data$ref_pos[i] <- NA
 
   }
 
 }
 
-jstor_data$first_ref_pos %<>% as.numeric()
 jstor_data$ref_pos %<>% as.numeric()
 
-
+### plots
 # first reference / text lenght #
 d <- jstor_data %>%
   mutate(text_len_prop = first_ref_pos / textlen)
@@ -228,14 +167,47 @@ d %>%
     geom_histogram(color = "black", fill = "lightblue") +
   theme_bw()
 
+
+
+d <- jstor_data %>%
+  mutate(cut_len_prop = ref_pos / textlen)
+
+d %>%
+  ggplot(., aes(x = cut_len_prop)) +
+    geom_histogram(color = "black", fill = "lightblue", bins = 50) +
+  theme_bw()
+
+d_f <- d %>%
+  filter(cut_len_prop > .75)
+
+#TRESHOLD == .75
+
+jstor_data <- jstor_data %>%
+  mutate(cut_len_prop = ref_pos / textlen)
+
+
+pb <- progress_bar$new(total = length(jstor_data$ref_pos))
+for(i in seq_along(jstor_data$text)){
+  pb$tick()
+  if(!is.na(jstor_data$cut_len_prop[i]) & (jstor_data$cut_len_prop[i] > .75)){
+
+    jstor_data$text[i] <- substr(jstor_data$text[i], 1, jstor_data$ref_pos[i])
+
+  } else {
+
+    next
+
+  }
+
+}
+
+
 ### modification ends here
 
-jstor_data %>% write_csv(., "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/JSTOR/jstor_data_v2.csv")
+jstor_data %>% write_csv(., "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/JSTOR/jstor_data_ref_cut.csv")
 ## Creating VCorpus ##
 
 jstor_corpus <- VCorpus(DataframeSource(jstor_data))
-
-jstor_corpus %>% saveRDS(., "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/jstor_corpus.rds")
 
 ## Filling up the Vcorpus with metadata. Not a necessary step.
 
@@ -250,6 +222,7 @@ for (i in seq_along(jstor_corpus)) {
   jstor_corpus[[i]]$meta$journal_pub_id <- meta(jstor_corpus)$journal_pub_id[i]
 }
 
+jstor_corpus %>% saveRDS(., "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/jstor_corpus.rds")
 # Metadata
 ## Assign disciplines to journals
 
