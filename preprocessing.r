@@ -223,14 +223,15 @@ for (i in seq_along(jstor_corpus)) {
 }
 
 jstor_corpus %>% saveRDS(., "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/jstor_corpus.rds")
+#jstor_corpus <- readRDS("/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/jstor_corpus.rds")
 # Metadata
 ## Assign disciplines to journals
-
 jstor_meta <- meta(jstor_corpus)
+rm(jstor_corpus)
 
 journal_info <- jst_get_journal_overview()
 
-jstor_meta %>% add_column(., "discipline" = NA)
+jstor_meta %<>% add_column(., "discipline" = NA)
 
 pb <- progress_bar$new(total = length(jstor_meta$journal_pub_id))
 
@@ -254,21 +255,7 @@ disc_levels <- jstor_meta %>%
   count() %>%
   arrange(., desc(n))
 
-
-disc_reduced <- c(
-  "Biological Sciences", "Business & Economics", "Health Sciences", "Science & Mathematics",
-  "Social Sciences", "Psychology & Education", "Public Policy & Administration", "Political Science", "Humanities & Arts", "Social Sciences",
-  "Social Sciences", "Business & Economics", "Other", "Environmental Science", "Social Sciences",
-  "Biological Sciences", "Science & Mathematics", "Criminology & Law", "Social Sciences", "Biological Sciences",
-  "Other", "Social Sciences", "Environmental Science", "Health Sciences", "Psychology & Education", "Social Sciences",
-  "Criminology & Law", "Science & Mathematics", "Public Policy & Administration", "Other",
-  "Environmental Science", "Humanities & Arts", "Humanities & Arts", "Social Sciences",
-  "Humanities & Arts", "Science & Mathematics", "Humanities & Arts", "Humanities & Arts", "Social Sciences",
-  "Social Sciences", "Biological Sciences", "Humanities & Arts", "Environmental Science",
-  "Science & Mathematics", "Social Sciences", "Social Sciences", "Social Sciences", "Political Science",
-  "Social Sciences", "Social Sciences", "Social Sciences", "Other", "Social Sciences",
-  "Humanities & Arts", "Political Science"
-)
+# disc_reduced is from jprep
 
 disc_levels %<>%
   add_column(., disc_reduced)
@@ -286,4 +273,4 @@ for (i in seq_along(jstor_meta$journal_pub_id)) {
 jstor_meta$discipline[which(is.na(jstor_meta$discipline) == TRUE)] <- "Other"
 
 jstor_meta %>%
-  saveRDS(., "jstor_meta.rds")
+  saveRDS(., "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/corpus_files/jstor_meta.rds")
