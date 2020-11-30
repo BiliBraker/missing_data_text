@@ -1,4 +1,3 @@
-*.Rhistory
+*.png
 *.xml
 *.iml
-*.png
