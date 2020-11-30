@@ -222,8 +222,9 @@ for (i in seq_along(jstor_corpus)) {
   jstor_corpus[[i]]$meta$journal_pub_id <- meta(jstor_corpus)$journal_pub_id[i]
 }
 
-jstor_corpus %>% saveRDS(., "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/jstor_corpus.rds")
+#jstor_corpus %>% saveRDS(., "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/jstor_corpus.rds")
 #jstor_corpus <- readRDS("/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/jstor_corpus.rds")
+
 # Metadata
 ## Assign disciplines to journals
 jstor_meta <- meta(jstor_corpus)
