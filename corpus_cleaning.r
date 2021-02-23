@@ -49,12 +49,16 @@ unfreqterms <- unfreqterms[which(unfreqterms %notin% vocab)]
 
 jstor_corpus <- tm_map(jstor_corpus, content_transformer(unfreq_term_remove), unfreqterms)
 jstor_corpus <- tm_map(jstor_corpus, stripWhitespace)
-jstor_corpus <- tm_map(jstor_corpus, stemDocument)
+#jstor_corpus <- tm_map(jstor_corpus, stemDocument)
 
 stopCluster(cl)
 
-jstor_corpus %>% saveRDS(., "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/corpus_files/jstor_corpus_stem_23_11.rds") # stemmed Vcorpus
-jstor_corpus <- readRDS("/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/corpus_files/jstor_corpus_stem_23_11.rds")
+jstor_corpus %>% saveRDS(., "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/corpus_files/jstor_corpus_22_02.rds")
+# jstor_corpus <- readRDS("/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/corpus_files/jstor_corpus_stem_22_02.rds")
+
+
+#jstor_corpus %>% saveRDS(., "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/corpus_files/jstor_corpus_stem_23_11.rds") # stemmed Vcorpus
+#jstor_corpus <- readRDS("/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/corpus_files/jstor_corpus_stem_23_11.rds")
 #### modification starts here
 
 
@@ -72,6 +76,7 @@ tokencunt <- function (text){
 
 }
 
+cl <- makeCluster(numCores)
 
 tokens <- pbapply::pbsapply(jstor_corpus, tokencunt, cl = cl)
 tokens <- as.numeric(tokens[1,])
@@ -79,13 +84,14 @@ tokens <- as.numeric(tokens[1,])
 stopCluster(cl)
 
 
-jstor_df <- tidy(jstor_corpus) %>%
+jstor_df <- tidytext::tidy(jstor_corpus) %>%
   relocate(id) %>%
   select(id, text)
 
 
-# experimental plots
+
 cut <- 2e04
+# experimental plots
 
 jstor_df %>%
   filter(tokens < cut) %>%
@@ -114,8 +120,9 @@ jstor_df %>%
 jstor_df <- cbind(jstor_df, tokens) %>%
   filter(tokens < cut)
 
+jstor_df %>% saveRDS(., "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/corpus_files/jstor_df_trim_22_02.rds")
 
-jstor_df %>% saveRDS(., "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/corpus_files/jstor_df_stem_trim_30_11.rds")
+#jstor_df %>% saveRDS(., "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/corpus_files/jstor_df_stem_trim_30_11.rds")
 #### modification ends here
 
 #writeLines(as.character(jstor_corpus), con = "./corpus_files/jstor_corpus_stem.txt") # for GloVe

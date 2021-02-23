@@ -6,7 +6,7 @@ library(data.table)
 
 quanteda_options(threads = 4)
 
-jstor_df <- readRDS("/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/corpus_files/jstor_df_stem_trim_30_11.rds")
+jstor_df <- readRDS("/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/corpus_files/jstor_df_trim_22_02.rds")
 
 
 ### quanteda
@@ -18,7 +18,7 @@ text_tokens <- tokens(jstor_corpus)
 text_tokens <- as.tokens(text_tokens)
 
 dict <- dictionary(list(missing = c("miss", "missing"),
-                        imputation = c("imput", "impute")))
+                        imputation = c("imput", "impute", "imputation", "imputed", "imputing")))
 
 text_tokens <- tokens_select(text_tokens, pattern = dict, selection = "keep", window = 5)
 text_tokens <- text_tokens %>% as.list()
@@ -37,17 +37,5 @@ jstor_df$text_tokens <- jstor_df$text_tokens %>% stringi::stri_replace_all_fixed
 jstor_df$text_tokens <- jstor_df$text_tokens %>% gsub(pattern = "[^A-Za-z0-9]", replacement = " ",x = .)
 jstor_df$text_tokens <- jstor_df$text_tokens %>% stringi::stri_replace_all_fixed(., pattern = '"' , replacement = "")
 
+saveRDS(jstor_df, "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/corpus_files/jstor_df_snipped_22_02.rds")
 #saveRDS(jstor_df, "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/corpus_files/jstor_df_snipped.rds")
-
-### data.table + text2vec
-setDT(jstor_df)
-setkey(jstor_df, id)
-
-it <- itoken(jstor_df$text_tokens,
-                   tokenizer = word_tokenizer,
-                   ids = jstor_df$id,
-                   progressbar = FALSE)
-
-vocabulary <- create_vocabulary(it)
-
-vocabulary  <- prune_vocabulary(vocabulary , term_count_min = 5L)
