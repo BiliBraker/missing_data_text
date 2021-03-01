@@ -205,6 +205,7 @@ for(i in seq_along(jstor_data$text)){
 ### modification ends here
 
 jstor_data %>% write_csv(., "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/JSTOR/jstor_data_ref_cut.csv")
+jstor_data <- read_csv("/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/JSTOR/jstor_data_ref_cut.csv")
 ## Creating VCorpus ##
 
 jstor_corpus <- VCorpus(DataframeSource(jstor_data))
@@ -228,6 +229,18 @@ for (i in seq_along(jstor_corpus)) {
 # Metadata
 ## Assign disciplines to journals
 jstor_meta <- meta(jstor_corpus)
+jstor_meta <- jstor_meta %>% add_column(id = NA) %>% relocate(id)
+
+pb <- progress_bar$new(total = length(jstor_corpus))
+
+for (i in seq_along(jstor_corpus)) {
+  pb$tick()
+
+  jstor_meta$id[i] <- jstor_corpus[[i]]$meta$id
+
+}
+
+
 rm(jstor_corpus)
 
 journal_info <- jst_get_journal_overview()
@@ -274,4 +287,4 @@ for (i in seq_along(jstor_meta$journal_pub_id)) {
 jstor_meta$discipline[which(is.na(jstor_meta$discipline) == TRUE)] <- "Other"
 
 jstor_meta %>%
-  saveRDS(., "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/corpus_files/jstor_meta.rds")
+  saveRDS(., "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/corpus_files/jstor_meta_01_03.rds")
