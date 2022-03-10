@@ -78,7 +78,7 @@ jstor_data <- jstor_data %>%
   relocate("doc_id", "text", "heading", "origin", "pub_year", "journal_pub_id")
 
 jstor_data %<>% add_column(textlen = NA)
-jstor_data %<>%  add_column(first_ref = NA)
+jstor_data %<>% add_column(first_ref = NA)
 
 jstor_data$textlen <- mclapply(jstor_data$text, nchar, mc.cores = 4L) %>% unlist()
 
@@ -90,31 +90,24 @@ jstor_data %<>% add_column(ref_pos = NA)
 
 pb <- progress_bar$new(total = length(jstor_data$ref_pos))
 
-for(i in seq_along(jstor_data$ref_pos)){
+for (i in seq_along(jstor_data$ref_pos)) {
   pb$tick()
   # find the start of the references with keywords #
 
   ref_begin <- stri_locate_all_fixed(str_to_lower(jstor_data$text[i]), " references ")
-  ref_begin <- ref_begin[[1]][nrow(ref_begin[[1]]),1] %>% as.numeric() #last row of the first column == start of the references
+  ref_begin <- ref_begin[[1]][nrow(ref_begin[[1]]), 1] %>% as.numeric() # last row of the first column == start of the references
 
-  if(is.na(ref_begin) == FALSE){
-
+  if (is.na(ref_begin) == FALSE) {
     jstor_data$ref_pos[i] <- ref_begin
-
   }
-  if(is.na(ref_begin) == TRUE){
-
+  if (is.na(ref_begin) == TRUE) {
     ref_begin <- stri_locate_all_fixed(str_to_lower(jstor_data$text[i]), " bibliography ")
-    ref_begin <- ref_begin[[1]][nrow(ref_begin[[1]]),1] %>% as.numeric()
+    ref_begin <- ref_begin[[1]][nrow(ref_begin[[1]]), 1] %>% as.numeric()
     jstor_data$ref_pos[i] <- ref_begin
-
   }
-  if(is.na(ref_begin) == TRUE){
-
+  if (is.na(ref_begin) == TRUE) {
     jstor_data$ref_pos[i] <- NA
-
   }
-
 }
 
 jstor_data$ref_pos %<>% as.numeric()
@@ -126,17 +119,17 @@ d <- jstor_data %>%
 
 d %>%
   ggplot(., aes(x = text_len_prop)) +
-    geom_histogram(color = "black", fill = "lightblue") +
+  geom_histogram(color = "black", fill = "lightblue") +
   theme_bw()
 
 jstor_data %>%
   filter(., !is.na(first_ref_pos) &
-          textlen < 5e5)  %>%
+    textlen < 5e5) %>%
   select(., first_ref_pos) %>%
   unlist() %>%
   tibble() %>%
   ggplot(., aes(x = .)) +
-    geom_histogram(color = "black", fill = "red")
+  geom_histogram(color = "black", fill = "red")
 
 jstor_data %>%
   filter(., textlen < 5e5) %>%
@@ -145,26 +138,26 @@ jstor_data %>%
   as.numeric() %>%
   tibble() %>%
   ggplot(., aes(x = .)) +
-    geom_histogram(color = "black", fill = "lightgreen")
+  geom_histogram(color = "black", fill = "lightgreen")
 
 # reference keywords position and first reference position
 
 jstor_data %>%
   filter(., !is.na(first_ref_pos) &
     !is.na(ref_pos) &
-    textlen < 2e5)  %>%
+    textlen < 2e5) %>%
   select(., first_ref_pos, ref_pos) %>%
   ggplot(.) +
-    geom_histogram(aes(x = first_ref_pos), alpha = .5, fill = "yellow", color = "black") +
-    geom_histogram(aes(x = ref_pos), alpha = .5, fill = "red", color = "blue") +
-    theme_bw()
+  geom_histogram(aes(x = first_ref_pos), alpha = .5, fill = "yellow", color = "black") +
+  geom_histogram(aes(x = ref_pos), alpha = .5, fill = "red", color = "blue") +
+  theme_bw()
 
 d <- jstor_data %>%
   mutate(text_len_prop = abs(first_ref_pos - ref_pos))
 
 d %>%
   ggplot(., aes(x = text_len_prop)) +
-    geom_histogram(color = "black", fill = "lightblue") +
+  geom_histogram(color = "black", fill = "lightblue") +
   theme_bw()
 
 
@@ -174,31 +167,26 @@ d <- jstor_data %>%
 
 d %>%
   ggplot(., aes(x = cut_len_prop)) +
-    geom_histogram(color = "black", fill = "lightblue", bins = 50) +
+  geom_histogram(color = "black", fill = "lightblue", bins = 50) +
   theme_bw()
 
 d_f <- d %>%
   filter(cut_len_prop > .75)
 
-#TRESHOLD == .75
+# TRESHOLD == .75
 
 jstor_data <- jstor_data %>%
   mutate(cut_len_prop = ref_pos / textlen)
 
 
 pb <- progress_bar$new(total = length(jstor_data$ref_pos))
-for(i in seq_along(jstor_data$text)){
+for (i in seq_along(jstor_data$text)) {
   pb$tick()
-  if(!is.na(jstor_data$cut_len_prop[i]) & (jstor_data$cut_len_prop[i] > .75)){
-
+  if (!is.na(jstor_data$cut_len_prop[i]) & (jstor_data$cut_len_prop[i] > .75)) {
     jstor_data$text[i] <- substr(jstor_data$text[i], 1, jstor_data$ref_pos[i])
-
   } else {
-
     next
-
   }
-
 }
 
 
@@ -223,13 +211,15 @@ for (i in seq_along(jstor_corpus)) {
   jstor_corpus[[i]]$meta$journal_pub_id <- meta(jstor_corpus)$journal_pub_id[i]
 }
 
-#jstor_corpus %>% saveRDS(., "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/jstor_corpus.rds")
-#jstor_corpus <- readRDS("/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/jstor_corpus.rds")
+# jstor_corpus %>% saveRDS(., "/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/jstor_corpus.rds")
+# jstor_corpus <- readRDS("/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/jstor_corpus.rds")
 
 # Metadata
 ## Assign disciplines to journals
 jstor_meta <- meta(jstor_corpus)
-jstor_meta <- jstor_meta %>% add_column(id = NA) %>% relocate(id)
+jstor_meta <- jstor_meta %>%
+  add_column(id = NA) %>%
+  relocate(id)
 
 pb <- progress_bar$new(total = length(jstor_corpus))
 
@@ -237,7 +227,6 @@ for (i in seq_along(jstor_corpus)) {
   pb$tick()
 
   jstor_meta$id[i] <- jstor_corpus[[i]]$meta$id
-
 }
 
 
