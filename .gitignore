@@ -46,4 +46,5 @@ vignettes/*.pdf
 *.xml
 *.iml
 *.idea
+*.rds
 >>>>>>> cleaning,preprocessing
