@@ -4,6 +4,12 @@ library(stringi)
 library(margins)
 library(ggeffects)
 
+#data <- read_csv("jstor_all.csv")
+#data <- data |>
+        #filter(about_missing == 0) |>
+        #select(-c(origin, about_missing))
+#data$pub_year_cat <- cut_interval(data$pub_year, 3)
+#write_csv(data, "jstor_all_filtered.csv")
 data <- read_csv("~/research-sync/missing_data_paper/fasttext/4_all_levels/jstor_all_filtered.csv") |> filter(discipline != "Criminology & Law" & discipline != "Humanities & Arts")
 
 data$discipline <- stri_replace_all_regex(data$discipline, pattern = " & ", replacement = " and ") |> as_factor()

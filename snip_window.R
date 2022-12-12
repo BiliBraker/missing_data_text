@@ -1,3 +1,5 @@
+# Setup
+
 library(tidyverse)
 library(tidytext)
 library(text2vec)
@@ -9,13 +11,14 @@ quanteda_options(threads = 4)
 jstor_df <- readRDS("/media/bilibraker/Maxtor/Krisz/Krisztian/Research/missing_data_paper/corpus_files/jstor_df_trim_22_02.rds")
 
 
-### quanteda
+## creating tokens with quanteda ##
 jstor_corpus <- corpus(jstor_df)
 
 text_tokens <- tokens(jstor_corpus)
 
 text_tokens <- as.tokens(text_tokens)
 
+## define dictionary for snipping contexts ##
 dict <- dictionary(list(
   missing = c("miss", "missing"),
   imputation = c("imput", "impute", "imputation", "imputed", "imputing")
