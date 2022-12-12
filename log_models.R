@@ -6,7 +6,7 @@ library(ggeffects)
 
 data <- read_csv("~/research-sync/missing_data_paper/fasttext/4_all_levels/jstor_all_filtered.csv") |> filter(discipline != "Criminology & Law" & discipline != "Humanities & Arts")
 
-data$discipline <- stri_replace_all_regex(data$discipline, pattern = " & ", replacement = " and ")
+data$discipline <- stri_replace_all_regex(data$discipline, pattern = " & ", replacement = " and ") |> as_factor()
 data$pub_year_cat <- relevel(as_factor(data$pub_year_cat), "[1999,2005]")
 # pub_year as continous
 model <- glm(advanced ~ pub_year + discipline, data = data, family = "binomial")
@@ -30,18 +30,29 @@ model3 <- glm(imputation ~ pub_year + discipline + pub_year * discipline, data =
 summary(model3)
 
 # save the results
+#stargazer(model, model1, model2, model3,
+  #type = "html",
+  #out = "~/research-sync/missing_data_paper/paper/log_models3.html",
+  #title = "Logistic models",
+  #dep.var.labels = c(
+    #"Advanced Imputation",
+    #"Imputation",
+    #"Advanced Imputation<br>(with interaction)",
+    #"Imputation<br>(with interaction)"
+  #)
+#)
+# LaTeX
 stargazer(model, model1, model2, model3,
-  type = "html",
-  out = "~/research/missing_data_paper/paper/log_models_4.html",
+  type = "latex",
+  out = "~/research-sync/missing_data_paper/paper/log_models3.tex",
   title = "Logistic models",
   dep.var.labels = c(
     "Advanced Imputation",
     "Imputation",
-    "Deletion"
-  )
+    "Advanced Imputation<br>(with interaction)",
+    "Imputation<br>(with interaction)"
+  ),
+  column.sep.width = "-15pt"
 )
 
-saveRDS(model, "./log_model.rds")
-saveRDS(model1, "./log_model1.rds")
-saveRDS(model2, "./log_model2.rds")
-saveRDS(model3, "./log_model3.rds")
+save(model, model1, model2, model3, file = "missing-data-models.RData")
